@@ -4,6 +4,19 @@
 # will not delete branches with not commited changes
 # run inside a git repo folder
 
+DRY_RUN=false
+if [ $# -gt 0 ]; then
+  case "$1" in
+    --dry-run )
+      DRY_RUN=true
+      ;;
+    * )
+      echo "Usage: gh clean-branches [--dry-run]"
+      exit 1
+      ;;
+  esac
+fi
+
 red=$'\e[1;31m'
 green=$'\e[1;32m'
 yellow=$'\e[1;33m'
@@ -57,15 +70,17 @@ else
     for branch in "${missing_upstream_branches[@]}"; do
         printf "%s\n" "   ${branch}"
     done
-
-    for branch in "${missing_upstream_branches[@]}"; do
-        printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
-        git branch -d ${branch}
-        if [[ $? -eq 1 ]]; then
-          printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
-          printf "%s\n" "${tellow}Try manually:${end} git branch -D ${branch}"
-        fi
-    done
+    
+    if [[ ${DRY_RUN} == false ]]; then
+      for branch in "${missing_upstream_branches[@]}"; do
+          printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
+          git branch -d ${branch}
+          if [[ $? -eq 1 ]]; then
+            printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
+            printf "%s\n" "${tellow}Try manually:${end} git branch -D ${branch}"
+          fi
+      done
+    fi
 fi
 
 printf "\n%s\n" "${green}Done${end}"
