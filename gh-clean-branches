@@ -47,18 +47,25 @@ console.log(missing_upstream_branches.join(','))
 
 missing_upstream_branches=("${(@s/,/)missing_upstream_branches_str}") # @ modifier
 
-printf "%s\n" "${blue}Local branches with missing upstream:${end}"
-for branch in "${missing_upstream_branches[@]}"; do
-    printf "%s\n" "   ${branch}"
-done
+branches_count=${#missing_upstream_branches[@]}
 
-for branch in "${missing_upstream_branches[@]}"; do
-    printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
-    git branch -d ${branch}
-    if [[ $? -eq 1 ]]; then
-      printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
-      printf "%s\n" "${tellow}Try manually:${end} git branch -D ${branch}"
-    fi
-done
+# No results returns an array with a single empty element
+if [[ ${branches_count} -eq 1 ]] && [[ -z "${missing_upstream_branches[1]}" ]]; then
+    printf "%s\n" "${green}No local branches with missing upstream found${end}"
+else
+    printf "%s\n" "${blue}${branches_count} Local branches with missing upstream:${end}"
+    for branch in "${missing_upstream_branches[@]}"; do
+        printf "%s\n" "   ${branch}"
+    done
+
+    for branch in "${missing_upstream_branches[@]}"; do
+        printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
+        git branch -d ${branch}
+        if [[ $? -eq 1 ]]; then
+          printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
+          printf "%s\n" "${tellow}Try manually:${end} git branch -D ${branch}"
+        fi
+    done
+fi
 
 printf "\n%s\n" "${green}Done${end}"
