@@ -11,7 +11,7 @@ if [ $# -gt 0 ]; then
       DRY_RUN=true
       ;;
     * )
-      echo "Usage: gh clean-branches [--dry-run]"
+      printf "%s\n" "Usage: gh clean-branches [--dry-run]"
       exit 1
       ;;
   esac
@@ -66,7 +66,7 @@ branches_count=${#missing_upstream_branches[@]}
 if [[ ${branches_count} -eq 1 ]] && [[ -z "${missing_upstream_branches[1]}" ]]; then
     printf "%s\n" "${green}No local branches with missing upstream found${end}"
 else
-    printf "%s\n" "${blue}${branches_count} Local branches with missing upstream:${end}"
+    printf "%s\n" "${blue}Local branches with missing upstream:${end}"
     for branch in "${missing_upstream_branches[@]}"; do
         printf "%s\n" "   ${branch}"
     done
@@ -80,6 +80,8 @@ else
             printf "%s\n" "${tellow}Try manually:${end} git branch -D ${branch}"
           fi
       done
+    else
+        printf "%s\n" "${green}Dry run: not deleting branches${end}"
     fi
 fi
 

@@ -16,11 +16,13 @@ What is does?
 
 When the extension completes, it stays on `main` branch of the repo.
 
+When using the `--dry-run` flag, the last delete branches command is skipped. All the rest is always performed.
 ## Usage
-Run it inside a git repo folder:
+Execute it inside a git repo folder:
 ```bash
-gh clean-branches
+gh clean-branches [--dry-run]
 ```
+Use the `--dry-run` flag to see the list of branches to be deleted before actually deleting them.
 
 ## Dependencies
 The extension relays on:
