@@ -17,13 +17,11 @@ if [ $# -gt 0 ]; then
   esac
 fi
 
-red=$'\e[1;31m'
-green=$'\e[1;32m'
-yellow=$'\e[1;33m'
-blue=$'\e[1;34m'
-mag=$'\e[1;35m'
-cyn=$'\e[1;36m'
-end=$'\e[0m'
+red=$(printf '\e[1;31m')
+green=$(printf '\e[1;32m')
+yellow=$(printf '\e[1;33m')
+blue=$(printf '\e[1;34m')
+end=$(printf '\e[0m')
 
 printf "%s\n" "${green}Sync branches${end}"
 git fetch -p >/dev/null 2>&1 # hide response
@@ -39,8 +37,8 @@ if [[ $? -eq 1 ]]
     exit 1
 fi
 
-local_branches_str=`git branch`
-remote_branches_str=`git branch -r`
+local_branches_str=$(git branch)
+remote_branches_str=$(git branch -r)
 remote_branches_str=${remote_branches_str//origin\// } # trim the "origin/" from branch names
 
 printf "%s\n%s\n" "${blue}Local branches:${end}" "${local_branches_str}"
@@ -74,10 +72,10 @@ else
     if [[ ${DRY_RUN} == false ]]; then
       for branch in "${missing_upstream_branches[@]}"; do
           printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
-          git branch -d ${branch}
+          git branch -d "${branch}"
           if [[ $? -eq 1 ]]; then
             printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
-            printf "%s\n" "${tellow}Try manually:${end} git branch -D ${branch}"
+            printf "%s\n" "${yellow}Try manually:${end} git branch -D ${branch}"
           fi
       done
     else
