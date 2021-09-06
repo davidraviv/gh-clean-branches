@@ -8,7 +8,7 @@ The extension uses `git branch -d` to delete the local branches, hence it will n
 
 What is does?
 - Fetch the repo.
-- Checkout main and pull changes (needed if we want to delete the current branch)
+- Checkout the default branch (whatever that is) and pull changes (needed if we want to delete the current branch)
 - Lists all local branches
 - Lists all remote branches
 - Lists branches with missing upstream to be deleted
@@ -34,5 +34,9 @@ I may remove the last two dependencies, they are not really needed (pull request
 
 ## Installation
 ```bash
-gh extension install davidraviv/gh-clean-branches
+gh extension install cottand/gh-clean-branches
 ```
+
+## Acknowledgemnts
+
+Credit goes to @davidraviv for the original form
