@@ -28,10 +28,12 @@ end=$'\e[0m'
 printf "%s\n" "${green}Sync branches${end}"
 git fetch -p >/dev/null 2>&1 # hide response
 
-printf "%s\n" "${green}Checking out main${end}"
-git checkout main
+DEFAULT=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
 
-printf "%s\n" "${green}Pulling main${end}"
+printf "%s\n" "${green}Checking out ${DEFAULT}${end}"
+git checkout $DEFAULT
+
+printf "%s\n" "${green}Pulling ${DEFAULT}${end}"
 git pull
 if [[ $? -eq 1 ]]
   then
@@ -51,8 +53,8 @@ const args = process.argv.slice(1);
 const local_branches_str = args[0]
 const remote_branches_str = args[1]
 
-local_branches = local_branches_str.trim().split('\n').filter(b => !b.includes(' main')).map(b => b.trim())
-remote_branches = remote_branches_str.trim().split('\n').filter(b => !b.includes(' main')).map(b => b.trim())
+local_branches = local_branches_str.trim().split('\n').filter(b => !b.includes(' ${DEFAULT}')).map(b => b.trim())
+remote_branches = remote_branches_str.trim().split('\n').filter(b => !b.includes(' ${DEFAULT}')).map(b => b.trim())
 missing_upstream_branches = local_branches.filter(b => !remote_branches.includes(b))
 
 console.log(missing_upstream_branches.join(','))
