@@ -39,4 +39,4 @@ gh extension install cottand/gh-clean-branches
 
 ## Acknowledgemnts
 
-Credit goes to @davidraviv for the original form
+Credit goes to @davidraviv for the original fork
