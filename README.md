@@ -8,13 +8,13 @@ The extension uses `git branch -d` to delete the local branches, hence it will n
 
 What is does?
 - Fetch the repo.
-- Checkout main and pull changes (needed if we want to delete the current branch)
+- Checkout the default branch (e.g `main`) and pull changes (needed if we want to delete the current branch)
 - Lists all local branches
 - Lists all remote branches
 - Lists branches with missing upstream to be deleted
 - Deletes branches with no upstream and no un-pushed changes.
 
-When the extension completes, it stays on `main` branch of the repo.
+When the extension completes, it stays on the default branch of the repo.
 
 When using the `--dry-run` flag, the last delete branches command is skipped. All the rest is always performed.
 ## Usage
