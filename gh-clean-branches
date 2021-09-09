@@ -26,12 +26,13 @@ end=$(printf '\e[0m')
 printf "%s\n" "${green}Sync branches${end}"
 git fetch -p >/dev/null 2>&1 # hide response
 
-DEFAULT=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+upstream_name=$(git remote show)
+default_branch=$(git remote show ${upstream_name} | awk '/HEAD branch/ {print $NF}')
 
-printf "%s\n" "${green}Checking out ${DEFAULT}${end}"
-git checkout $DEFAULT
+printf "%s\n" "${green}Checking out ${default_branch}${end}"
+git checkout $default_branch
 
-printf "%s\n" "${green}Pulling ${DEFAULT}${end}"
+printf "%s\n" "${green}Pulling ${default_branch}${end}"
 git pull
 if [[ $? -eq 1 ]]
   then
@@ -41,7 +42,7 @@ fi
 
 local_branches_str=$(git branch)
 remote_branches_str=$(git branch -r)
-remote_branches_str=${remote_branches_str//origin\// } # trim the "origin/" from branch names
+remote_branches_str=${remote_branches_str//${upstream_name}\// } # trim the "origin/" from branch names
 
 printf "%s\n%s\n" "${blue}Local branches:${end}" "${local_branches_str}"
 printf "%s\n%s\n" "${blue}Remote branches:${end}" "${remote_branches_str}"
@@ -51,8 +52,8 @@ const args = process.argv.slice(1);
 const local_branches_str = args[0]
 const remote_branches_str = args[1]
 
-local_branches = local_branches_str.trim().split('\n').filter(b => !b.includes(' ${DEFAULT}')).map(b => b.trim())
-remote_branches = remote_branches_str.trim().split('\n').filter(b => !b.includes(' ${DEFAULT}')).map(b => b.trim())
+local_branches = local_branches_str.trim().split('\n').filter(b => !b.includes(' ${default_branch}')).map(b => b.trim())
+remote_branches = remote_branches_str.trim().split('\n').filter(b => !b.includes(' ${default_branch}')).map(b => b.trim())
 missing_upstream_branches = local_branches.filter(b => !remote_branches.includes(b))
 
 console.log(missing_upstream_branches.join(','))
