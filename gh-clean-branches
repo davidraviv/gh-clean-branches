@@ -27,13 +27,14 @@ printf "%s\n" "${green}Sync branches${end}"
 git fetch -p >/dev/null 2>&1 # hide response
 
 upstream_name=$(git remote show)
+home_branch=$(git branch --show-current)
 default_branch=$(git remote show ${upstream_name} | awk '/HEAD branch/ {print $NF}')
 
 printf "%s\n" "${green}Checking out ${default_branch}${end}"
 git checkout $default_branch
 
 printf "%s\n" "${green}Pulling ${default_branch}${end}"
-git pull
+git pull ${upstream_name} ${default_branch}
 if [[ $? -eq 1 ]]
   then
     printf "%s\n" "${red}Failed pull, Check for uncomited changes.${end}"
@@ -41,6 +42,7 @@ if [[ $? -eq 1 ]]
 fi
 
 local_branches_str=$(git branch)
+local_branches_str=${local_branches_str/\*?/  } # trim the "*"" on the current branch
 remote_branches_str=$(git branch -r)
 remote_branches_str=${remote_branches_str//${upstream_name}\// } # trim the "origin/" from branch names
 
@@ -85,5 +87,8 @@ else
         printf "%s\n" "${green}Dry run: not deleting branches${end}"
     fi
 fi
+
+# Trying to checkout the home branch, if this branch was deleted, it will silently fail and stay on the default_branch
+git checkout $home_branch >/dev/null 2>&1 # hide response
 
 printf "\n%s\n" "${green}Done${end}"
