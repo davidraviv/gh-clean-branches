@@ -29,10 +29,7 @@ Use the `--dry-run` flag to see the list of branches to be deleted before actual
 
 When using the `--dry-run` flag, deleting the branches is skipped. All the rest is always performed.
 ## Dependencies
-The extension relays on:
-- gh CLI v2.0
-- git v2.22
+The extension depends on:
 - zsh
-- node.js
-
-I may remove the last two dependencies, they are not really needed (pull requests are welcomed!). It helped me for fast developing it.
+- git v2.22
+- gh CLI v2.0
