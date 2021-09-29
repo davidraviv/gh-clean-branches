@@ -37,7 +37,7 @@ printf "%s\n" "${green}Pulling ${default_branch}${end}"
 git pull ${upstream_name} ${default_branch}
 if [[ $? -eq 1 ]]
   then
-    printf "%s\n" "${red}Failed pull, Check for uncomited changes.${end}"
+    printf "%s\n" "${red}Failed to pull, check for uncomitted changes.${end}"
     exit 1
 fi
 
