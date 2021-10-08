@@ -17,7 +17,7 @@ Execute it inside a git repo folder:
 gh clean-branches [--dry-run] [--force]
 ```
 Use the `--dry-run` flag to see the list of branches to be deleted before actually deleting them.
-Use the `--force` flag to toggle the `-D` command and force a branch to be deleted regardless if upstream changes have local changes.
+Use the `--force` flag to toggle the `-D` command and force a branch to be deleted regardless if upstream branches have local changes.
 
 ## Script flow
 - Fetches the repo
