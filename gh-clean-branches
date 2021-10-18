@@ -84,9 +84,10 @@ else
 
       for branch in "${missing_upstream_branches[@]}"; do
           printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
-          git branch ${delete_flag} "${branch}" 2> /dev/null # allow success
+          git branch ${delete_flag} "${branch}"
           if [[ $? -eq 1 ]]; then
             printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
+            printf "%s\n" "${yellow}Try using --force flag ${branch}"
           fi
       done
     else
