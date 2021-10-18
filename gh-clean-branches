@@ -10,8 +10,11 @@ if [ $# -gt 0 ]; then
     --dry-run )
       DRY_RUN=true
       ;;
+    --force)
+      FORCE_DELETE=true
+      ;;
     * )
-      printf "%s\n" "Usage: gh clean-branches [--dry-run]"
+      printf "%s\n" "Usage: gh clean-branches [--dry-run] [--force]"
       exit 1
       ;;
   esac
@@ -62,6 +65,12 @@ missing_upstream_branches=(${local_branches:|remote_branches}) # local_branches 
 
 branches_count=${#missing_upstream_branches[@]}
 
+if [[ ${FORCE_DELETE} == true ]]; then
+  delete_flag='-D'
+else
+  delete_flag='-d'
+fi
+
 if [[ ${branches_count} -eq 0 ]]; then
     printf "%s\n" "${green}No local branches with missing upstream found${end}"
 else
@@ -69,14 +78,15 @@ else
     for branch in "${missing_upstream_branches[@]}"; do
         printf "%s\n" "   ${branch}"
     done
-    
+
     if [[ ${DRY_RUN} == false ]]; then
+      [[ ${FORCE_DELETE} == true ]] && echo "${yellow}Force delete is enabled${end}"
+
       for branch in "${missing_upstream_branches[@]}"; do
           printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
-          git branch -d "${branch}"
+          git branch ${delete_flag} "${branch}" 2> /dev/null # allow success
           if [[ $? -eq 1 ]]; then
             printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
-            printf "%s\n" "${yellow}Try manually:${end} git branch -D ${branch}"
           fi
       done
     else
