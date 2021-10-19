@@ -87,7 +87,7 @@ else
           git branch ${delete_flag} "${branch}"
           if [[ $? -eq 1 ]]; then
             printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
-            printf "%s\n" "${yellow}Try using --force flag ${branch}"
+            printf "%s\n" "${yellow}Try using --force flag${end}"
           fi
       done
     else
