@@ -5,20 +5,28 @@
 # run inside a git repo folder
 
 DRY_RUN=false
-if [ $# -gt 0 ]; then
+VERBOSE=true
+
+while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --dry-run )
       DRY_RUN=true
+      shift
       ;;
     --force)
       FORCE_DELETE=true
+      shift
+      ;;
+    --quiet)
+      VERBOSE=false
+      shift
       ;;
     * )
-      printf "%s\n" "Usage: gh clean-branches [--dry-run] [--force]"
+      printf "%s\n" "Usage: gh clean-branches [--dry-run] [--force] [--quiet]"
       exit 1
       ;;
   esac
-fi
+done
 
 red=$(printf '\e[1;31m')
 green=$(printf '\e[1;32m')
@@ -38,8 +46,7 @@ git checkout $default_branch
 
 printf "%s\n" "${green}Pulling ${default_branch}${end}"
 git pull ${upstream_name} ${default_branch}
-if [[ $? -eq 1 ]]
-  then
+if [[ $? -eq 1 ]]; then
     printf "%s\n" "${red}Failed to pull, check for uncomitted changes.${end}"
     exit 1
 fi
@@ -49,8 +56,10 @@ local_branches_str=${local_branches_str/\*?/  } # trim the "*"" on the current b
 remote_branches_str=$(git branch -r)
 remote_branches_str=${remote_branches_str//${upstream_name}\// } # trim the "origin/" from branch names
 
-printf "%s\n%s\n" "${blue}Local branches:${end}" "${local_branches_str}"
-printf "%s\n%s\n" "${blue}Remote branches:${end}" "${remote_branches_str}"
+if [[ ${VERBOSE} == true ]]; then
+  printf "%s\n%s\n" "${blue}Local branches:${end}" "${local_branches_str}"
+  printf "%s\n%s\n" "${blue}Remote branches:${end}" "${remote_branches_str}"
+fi
 
 setopt extended_glob
 local_branches=("${(f)local_branches_str}")                    # split string by \n to array
