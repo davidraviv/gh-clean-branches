@@ -6,7 +6,6 @@
 
 DRY_RUN=false
 
-
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --dry-run )
@@ -89,7 +88,7 @@ else
     done
 
     if [[ ${DRY_RUN} == false ]]; then
-      [[ ${FORCE_DELETE} == true ]] && echo "${yellow}Force delete is enabled${end}"
+      [[ ${FORCE_DELETE} == true ]] && printf "%s\n" "${yellow}Force delete is enabled${end}"
 
       for branch in "${missing_upstream_branches[@]}"; do
           printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
