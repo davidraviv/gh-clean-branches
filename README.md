@@ -15,11 +15,13 @@ gh extension install davidraviv/gh-clean-branches
 ## Usage
 Execute it inside a git repo folder:
 ```bash
-gh clean-branches [--dry-run] [--force]
+gh clean-branches [--dry-run] [--force] [--verbose]
 ```
 ### Options
+
 - `--dry-run` See the list of branches to be deleted before actually deleting them.
 - `--force` Uses `git branch -D` forcing a branch to be deleted regardless if upstream branches have local changes. Use carefully!
+- `--verbose` Print all log statements.
 
 ## Script flow
 - Fetches the repo
