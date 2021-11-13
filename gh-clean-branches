@@ -37,6 +37,15 @@ printf "%s\n" "${green}Sync branches${end}"
 git fetch -p >/dev/null 2>&1 # hide response
 
 upstream_name=$(git remote show)
+if [[ ${upstream_name} == *$'\n'* ]]; then
+    printf "%s\n" "${red}It seems that this repo has multiple upstreams.${end}"
+    printf "%s\n" "${red}Unfortunatelly, this script supports a single upstream.${end}"
+    printf "%s\n" "${red}Please vote up for this issue or even better, contribute a PR:${end}"
+    printf "%s\n" "${blue}https://github.com/davidraviv/gh-clean-branches/issues/11${end}"
+    printf "%s\n%s\n" "Found the following upstreams:" "${upstream_name}"
+    exit 1
+fi
+
 home_branch=$(git branch --show-current)
 default_branch=$(git remote show ${upstream_name} | awk '/HEAD branch/ {print $NF}')
 
