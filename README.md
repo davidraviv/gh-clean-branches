@@ -26,8 +26,8 @@ gh clean-branches [--dry-run] [--force] [--verbose]
 ## Script flow
 - Fetches the repo
 - Checkout the default branch (e.g `main`) and pull changes (needed if we want to delete the current branch)
-- Lists all local branches
-- Lists all remote branches
+- Lists all local branches _(only with `--verbose` flag)_
+- Lists all remote branches _(only with `--verbose` flag)_
 - Lists branches with missing upstream to be deleted
 - Deletes branches with no upstream and no un-pushed changes _(Skipped on `--dry-run`)_
 - Checkout the branch we started with unless it was deleted, then stays on the default branch
