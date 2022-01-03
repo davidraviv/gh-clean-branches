@@ -36,83 +36,75 @@ end=$(printf '\e[0m')
 printf "%s\n" "${green}Sync branches${end}"
 git fetch -p >/dev/null 2>&1 # hide response
 
-upstream_name=$(git remote show)
-if [[ ${upstream_name} == *$'\n'* ]]; then
-    printf "%s\n" "${red}It seems that this repo has multiple upstreams.${end}"
-    printf "%s\n" "${red}Unfortunatelly, this script supports a single upstream.${end}"
-    printf "%s\n" "${red}Please vote up for this issue or even better, contribute a PR:${end}"
-    printf "%s\n" "${blue}https://github.com/davidraviv/gh-clean-branches/issues/11${end}"
-    printf "%s\n%s\n" "Found the following upstreams:" "${upstream_name}"
-    exit 1
-fi
-
 home_branch=$(git branch --show-current)
-default_branch=$(git remote show ${upstream_name} | awk '/HEAD branch/ {print $NF}')
+for upstream_name in $(git remote show); do
+  default_branch=$(git remote show ${upstream_name} | awk '/HEAD branch/ {print $NF}')
 
-printf "%s\n" "${green}Checking out ${default_branch}${end}"
-git checkout $default_branch
+  printf "%s\n" "${green}Checking out ${default_branch}${end}"
+  git checkout $default_branch
 
-printf "%s\n" "${green}Pulling ${default_branch}${end}"
-git pull ${upstream_name} ${default_branch}
-if [[ $? -eq 1 ]]; then
-    printf "%s\n" "${red}Failed to pull, check for uncomitted changes.${end}"
-    exit 1
-fi
+  printf "%s\n" "${green}Pulling ${upstream_name}/${default_branch}${end}"
+  git pull ${upstream_name} ${default_branch}
+  if [[ $? -eq 1 ]]; then
+      printf "%s\n" "${red}Failed to pull, check for uncomitted changes.${end}"
+      exit 1
+  fi
 
-local_branches_str=$(git branch)
-local_branches_str=${local_branches_str/\*?/  } # trim the "*"" on the current branch
-remote_branches_str=$(git branch -r)
-remote_branches_str=${remote_branches_str//${upstream_name}\// } # trim the "origin/" from branch names
+  # list branch locally, and exclude default branch
+  local_branches_str=$(git branch | grep -v "${upstream_name}/${default_branch}")
+  local_branches_str=${local_branches_str/\*?/  } # trim the "*"" on the current branch
+  remote_branches_str=$(git branch -r | grep ${upstream_name} | grep -v "${upstream_name}/${default_branch}") # exclude default branch
+  remote_branches_str=${remote_branches_str//${upstream_name}\// } # trim the "upstream_name/" from branch names
 
-if [[ ${VERBOSE} == true ]]; then
-  printf "%s\n%s\n" "${blue}Local branches:${end}" "${local_branches_str}"
-  printf "%s\n%s\n" "${blue}Remote branches:${end}" "${remote_branches_str}"
-fi
+  if [[ ${VERBOSE} == true ]]; then
+    printf "%s\n%s\n" "${blue}Local branches:${end}" "${local_branches_str}"
+    printf "%s\n%s\n" "${blue}Remote branches:${end}" "${remote_branches_str}"
+  fi
 
-setopt extended_glob
-local_branches=("${(f)local_branches_str}")                    # split string by \n to array
-local_branches=(${local_branches:#* ${default_branch}})        # filter out default_branch
-local_branches=(${local_branches// ##})                        # trim spaces
+  setopt extended_glob
+  local_branches=("${(f)local_branches_str}")                    # split string by \n to array
+  local_branches=(${local_branches:#* ${default_branch}})        # filter out default_branch
+  local_branches=(${local_branches// ##})                        # trim spaces
+  remote_branches=("${(f)remote_branches_str}")                  # split string by \n to array
+  remote_branches=(${remote_branches:#* ${default_branch}})      # filter out default_branch
+  remote_branches=(${remote_branches// ##})                      # trim spaces
 
-remote_branches=("${(f)remote_branches_str}")                  # split string by \n to array
-remote_branches=(${remote_branches:#* ${default_branch}})      # filter out default_branch
-remote_branches=(${remote_branches// ##})                      # trim spaces
+  missing_upstream_branches=(${local_branches:|remote_branches}) # local_branches minus remote_branches
 
-missing_upstream_branches=(${local_branches:|remote_branches}) # local_branches minus remote_branches
+  branches_count=${#missing_upstream_branches[@]}
 
-branches_count=${#missing_upstream_branches[@]}
+  if [[ ${FORCE_DELETE} == true ]]; then
+    delete_flag='-D'
+  else
+    delete_flag='-d'
+  fi
 
-if [[ ${FORCE_DELETE} == true ]]; then
-  delete_flag='-D'
-else
-  delete_flag='-d'
-fi
-
-if [[ ${branches_count} -eq 0 ]]; then
-    printf "%s\n" "${green}No local branches with missing upstream found${end}"
-else
-    printf "%s\n" "${blue}Local branches with missing upstream:${end}"
-    for branch in "${missing_upstream_branches[@]}"; do
-        printf "%s\n" "   ${branch}"
-    done
-
-    if [[ ${DRY_RUN} == false ]]; then
-      [[ ${FORCE_DELETE} == true ]] && printf "%s\n" "${yellow}Force delete is enabled${end}"
-
+  if [[ ${branches_count} -eq 0 ]]; then
+      printf "%s\n" "${green}No local branches with missing upstream found${end}"
+  else
+      printf "%s\n" "${blue}Local branches with missing upstream:${end}"
       for branch in "${missing_upstream_branches[@]}"; do
-          printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
-          git branch ${delete_flag} "${branch}"
-          if [[ $? -eq 1 ]]; then
-            printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
-            printf "%s\n" "${yellow}Try using --force flag${end}"
-          fi
+          printf "%s\n" "   ${branch} -> ${upstream_name}/${branch}"
       done
-    else
-        printf "%s\n" "${green}Dry run: not deleting branches${end}"
-    fi
-fi
 
-# Trying to checkout the home branch, if this branch was deleted, it will silently fail and stay on the default_branch
-git checkout $home_branch >/dev/null 2>&1 # hide response
+      if [[ ${DRY_RUN} == false ]]; then
+        [[ ${FORCE_DELETE} == true ]] && printf "%s\n" "${yellow}Force delete is enabled${end}"
 
-printf "\n%s\n" "${green}Done${end}"
+        for branch in "${missing_upstream_branches[@]}"; do
+            printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
+            git branch ${delete_flag} "${branch}"
+            if [[ $? -eq 1 ]]; then
+              printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
+              printf "%s\n" "${yellow}Try using --force flag${end}"
+            fi
+        done
+      else
+          printf "%s\n" "${green}Dry run: not deleting branches${end}"
+      fi
+  fi
+
+  # Trying to checkout the home branch, if this branch was deleted, it will silently fail and stay on the default_branch
+  git checkout $home_branch >/dev/null 2>&1 # hide response
+
+  printf "\n%s\n" "${green}Done${end}"
+done
