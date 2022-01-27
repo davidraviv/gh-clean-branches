@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # safely delete local branches that have no remotes and no hanging changes
-# will not delete branches with not commited changes
+# will not delete branches with not committed changes
 # run inside a git repo folder
 
 DRY_RUN=false
@@ -37,36 +37,42 @@ printf "%s\n" "${green}Sync branches${end}"
 git fetch -p >/dev/null 2>&1 # hide response
 
 upstream_name=$(git remote show)
-if [[ ${upstream_name} == *$'\n'* ]]; then
-    printf "%s\n" "${red}It seems that this repo has multiple upstreams.${end}"
-    printf "%s\n" "${red}Unfortunatelly, this script supports a single upstream.${end}"
-    printf "%s\n" "${red}Please vote up for this issue or even better, contribute a PR:${end}"
-    printf "%s\n" "${blue}https://github.com/davidraviv/gh-clean-branches/issues/11${end}"
-    printf "%s\n%s\n" "Found the following upstreams:" "${upstream_name}"
-    exit 1
-fi
-
 home_branch=$(git branch --show-current)
-default_branch=$(git remote show ${upstream_name} | awk '/HEAD branch/ {print $NF}')
 
-printf "%s\n" "${green}Checking out ${default_branch}${end}"
-git checkout $default_branch
+# Pull all upstream
+for upstream_name in $(git remote show); do
+  default_branch=$(git remote show ${upstream_name} | awk '/HEAD branch/ {print $NF}')
 
-printf "%s\n" "${green}Pulling ${default_branch}${end}"
-git pull ${upstream_name} ${default_branch}
-if [[ $? -eq 1 ]]; then
-    printf "%s\n" "${red}Failed to pull, check for uncomitted changes.${end}"
-    exit 1
-fi
+  printf "%s\n" "${green}Checking out ${upstream_name}/${default_branch}${end}"
+  git checkout $default_branch -q
+
+  printf "%s\n" "${green}Pulling ${upstream_name}/${default_branch}${end}"
+  git pull ${upstream_name} ${default_branch} -q
+  if [[ $? -ne 0 ]]; then
+      printf "%s\n" "${red}Failed to pull, check for uncommitted changes.${end}"
+      exit 1
+  fi
+
+  # get al upstream branches (e.g. origin/my-branch)
+  upstream_branches_str=$(git for-each-ref --format='%(refname:short)' refs/remotes/${upstream_name})
+  # trim the upstream name (e.g. "origin/") from branch names
+  upstream_branches_str=${upstream_branches_str//${upstream_name}\// }
+  # accumulated branches from all upstream
+  remote_branches_str="${remote_branches_str}${upstream_branches_str}\n"
+
+  if [[ ${VERBOSE} == true ]]; then
+    printf "%s\n%s\n" "${blue}Remote branches on ${upstream_name}:${end}" "${upstream_branches_str}"
+  fi
+done
+
+unique_remote_branches_str=$(echo "${remote_branches_str}" | sort -u)
 
 local_branches_str=$(git branch)
-local_branches_str=${local_branches_str/\*?/  } # trim the "*"" on the current branch
-remote_branches_str=$(git branch -r)
-remote_branches_str=${remote_branches_str//${upstream_name}\// } # trim the "origin/" from branch names
+local_branches_str=${local_branches_str/\*?/  }                # trim the "*"" on the current branch
+local_branches_str=${local_branches_str/\ ?refs\/heads?/}      # remove the "refs/heads" if exists
 
 if [[ ${VERBOSE} == true ]]; then
   printf "%s\n%s\n" "${blue}Local branches:${end}" "${local_branches_str}"
-  printf "%s\n%s\n" "${blue}Remote branches:${end}" "${remote_branches_str}"
 fi
 
 setopt extended_glob
@@ -74,7 +80,7 @@ local_branches=("${(f)local_branches_str}")                    # split string by
 local_branches=(${local_branches:#* ${default_branch}})        # filter out default_branch
 local_branches=(${local_branches// ##})                        # trim spaces
 
-remote_branches=("${(f)remote_branches_str}")                  # split string by \n to array
+remote_branches=("${(f)unique_remote_branches_str}")           # split string by \n to array
 remote_branches=(${remote_branches:#* ${default_branch}})      # filter out default_branch
 remote_branches=(${remote_branches// ##})                      # trim spaces
 
@@ -101,8 +107,8 @@ else
 
       for branch in "${missing_upstream_branches[@]}"; do
           printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
-          git branch ${delete_flag} "${branch}"
-          if [[ $? -eq 1 ]]; then
+          git branch ${delete_flag} "${branch}" -q
+          if [[ $? -ne 0 ]]; then
             printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
             printf "%s\n" "${yellow}Try using --force flag${end}"
           fi
