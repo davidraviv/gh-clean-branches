@@ -35,6 +35,5 @@ gh clean-branches [--dry-run] [--force] [--verbose]
 
 ## Dependencies
 The extension depends on:
-- zsh
 - git v2.22
 - gh CLI v2.0
