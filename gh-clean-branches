@@ -41,7 +41,7 @@ home_branch=$(git branch --show-current)
 
 # Pull all upstream
 for upstream_name in $(git remote show); do
-  default_branch=$(git remote show ${upstream_name} | awk '/HEAD branch/ {print $NF}')
+  default_branch=$(git remote show ${upstream_name} | awk -F '[：:]' '/HEAD (branch|分支)/ {print $NF}')
 
   printf "%s\n" "${green}Checking out ${upstream_name}/${default_branch}${end}"
   git checkout $default_branch -q
