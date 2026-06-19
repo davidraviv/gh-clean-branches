@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 
 # safely delete local branches that have no remotes and no hanging changes
 # will not delete branches with not committed changes
