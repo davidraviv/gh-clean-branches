@@ -83,6 +83,7 @@ setopt extended_glob
 local_branches=("${(f)local_branches_str}")                    # split string by \n to array
 local_branches=(${local_branches:#* ${default_branch}})        # filter out default_branch
 local_branches=(${local_branches// ##})                        # trim spaces
+local_branches=(${local_branches/#\+/})                        # strip "+" prefix marking worktree-checked-out branches
 
 remote_branches=("${(f)unique_remote_branches_str}")           # split string by \n to array
 remote_branches=(${remote_branches:#* ${default_branch}})      # filter out default_branch
