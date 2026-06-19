@@ -23,7 +23,7 @@ gh clean-branches [--dry-run] [--force] [--verbose] [--worktrees]
 - `--dry-run` See the list of branches and worktrees to be deleted before actually deleting them.
 - `--force` Uses `git branch -D` forcing a branch to be deleted regardless if upstream branches have local changes. Also force-removes worktrees that have uncommitted changes. Use carefully!
 - `--verbose` Print all log statements.
-- `--worktrees` Also remove local worktrees whose remote branch has been deleted, then delete their local branch. Worktrees in detached HEAD state are removed as well. Without this flag, worktree cleanup is skipped and existing behaviour is unchanged.
+- `--worktrees` Also remove local worktrees whose remote branch has been deleted, then delete their local branch. Worktrees in detached HEAD state (no branch) are removed as well. Without this flag, worktree cleanup is skipped and existing behaviour is unchanged.
 
 ## Script flow
 - Fetches the repo

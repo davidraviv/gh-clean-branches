@@ -155,12 +155,13 @@ if [[ ${CLEAN_WORKTREES} == true ]]; then
       for wt_remove_path in "${orphaned_worktree_paths[@]}"; do
         printf "%s\n" "${green}Removing worktree:${end}   ${wt_remove_path}"
         if [[ ${FORCE_DELETE} == true ]]; then
-          git worktree remove --force "${wt_remove_path}" 2>/dev/null
+          remove_err=$(git worktree remove --force "${wt_remove_path}" 2>&1)
         else
-          git worktree remove "${wt_remove_path}" 2>/dev/null
+          remove_err=$(git worktree remove "${wt_remove_path}" 2>&1)
         fi
         if [[ $? -ne 0 ]]; then
           printf "%s\n" "❌  ${red}Could not remove${end} ${wt_remove_path}"
+          printf "%s\n" "   ${remove_err}"
           [[ ${FORCE_DELETE} != true ]] && printf "%s\n" "${yellow}Try using --force flag${end}"
         fi
       done
