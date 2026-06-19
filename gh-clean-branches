@@ -185,10 +185,14 @@ else
 
       for branch in "${missing_upstream_branches[@]}"; do
           printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
-          git branch ${delete_flag} "${branch}" -q
+          delete_err=$(git branch ${delete_flag} "${branch}" 2>&1)
           if [[ $? -ne 0 ]]; then
             printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
-            printf "%s\n" "${yellow}Try using --force flag${end}"
+            if [[ "$delete_err" == *"checked out at"* ]]; then
+              printf "%s\n" "${yellow}Branch is used by a worktree — try using --worktrees flag${end}"
+            else
+              printf "%s\n" "${yellow}Try using --force flag${end}"
+            fi
           fi
       done
     else
