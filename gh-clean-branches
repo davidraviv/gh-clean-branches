@@ -20,8 +20,12 @@ while [[ "$#" -gt 0 ]]; do
       VERBOSE=true
       shift
       ;;
+    --worktrees)
+      CLEAN_WORKTREES=true
+      shift
+      ;;
     * )
-      printf "%s\n" "Usage: gh clean-branches [--dry-run] [--force] [--verbose]"
+      printf "%s\n" "Usage: gh clean-branches [--dry-run] [--force] [--verbose] [--worktrees]"
       exit 1
       ;;
   esac
@@ -79,6 +83,7 @@ setopt extended_glob
 local_branches=("${(f)local_branches_str}")                    # split string by \n to array
 local_branches=(${local_branches:#* ${default_branch}})        # filter out default_branch
 local_branches=(${local_branches// ##})                        # trim spaces
+local_branches=(${local_branches/#\+/})                        # strip "+" prefix marking worktree-checked-out branches
 
 remote_branches=("${(f)unique_remote_branches_str}")           # split string by \n to array
 remote_branches=(${remote_branches:#* ${default_branch}})      # filter out default_branch
@@ -94,6 +99,80 @@ else
   delete_flag='-d'
 fi
 
+# Worktree cleanup — runs before branch deletion so checked-out branches can be removed afterward
+if [[ ${CLEAN_WORKTREES} == true ]]; then
+  worktree_output=$(git worktree list --porcelain)
+  main_worktree=$(printf '%s\n' "$worktree_output" | awk 'NR==1 {print $2}')
+  current_dir=$(pwd -P)
+
+  orphaned_worktree_paths=()
+  orphaned_worktree_branches=()
+  wt_path=""
+  wt_branch=""
+  wt_detached=false
+
+  while IFS= read -r line; do
+    if [[ $line == worktree\ * ]]; then
+      # evaluate the previous block before starting a new one
+      if [[ -n "$wt_path" && "$wt_path" != "$main_worktree" && "$wt_path" != "$current_dir" ]]; then
+        if [[ $wt_detached == true ]] || { [[ -n "$wt_branch" ]] && (( ${missing_upstream_branches[(I)$wt_branch]} )); }; then
+          orphaned_worktree_paths+=("$wt_path")
+          orphaned_worktree_branches+=("$wt_branch")
+        fi
+      fi
+      wt_path="${line#worktree }"
+      wt_branch=""
+      wt_detached=false
+    elif [[ $line == branch\ * ]]; then
+      wt_branch="${line#branch refs/heads/}"
+    elif [[ $line == "detached" ]]; then
+      wt_detached=true
+    fi
+  done <<< "$worktree_output"
+  # evaluate the last block
+  if [[ -n "$wt_path" && "$wt_path" != "$main_worktree" && "$wt_path" != "$current_dir" ]]; then
+    if [[ $wt_detached == true ]] || { [[ -n "$wt_branch" ]] && (( ${missing_upstream_branches[(I)$wt_branch]} )); }; then
+      orphaned_worktree_paths+=("$wt_path")
+      orphaned_worktree_branches+=("$wt_branch")
+    fi
+  fi
+
+  worktrees_count=${#orphaned_worktree_paths[@]}
+
+  if [[ ${worktrees_count} -eq 0 ]]; then
+    printf "%s\n" "${green}No orphaned worktrees found${end}"
+  else
+    printf "%s\n" "${blue}Orphaned worktrees to remove:${end}"
+    for ((i=1; i<=worktrees_count; i++)); do
+      wt_label="${orphaned_worktree_paths[$i]}"
+      [[ -n "${orphaned_worktree_branches[$i]}" ]] && wt_label+=" (branch: ${orphaned_worktree_branches[$i]})"
+      printf "%s\n" "   ${wt_label}"
+    done
+
+    if [[ ${DRY_RUN} == false ]]; then
+      [[ ${FORCE_DELETE} == true ]] && printf "%s\n" "${yellow}Force delete is enabled${end}"
+
+      for wt_remove_path in "${orphaned_worktree_paths[@]}"; do
+        printf "%s\n" "${green}Removing worktree:${end}   ${wt_remove_path}"
+        if [[ ${FORCE_DELETE} == true ]]; then
+          remove_err=$(git worktree remove --force "${wt_remove_path}" 2>&1)
+        else
+          remove_err=$(git worktree remove "${wt_remove_path}" 2>&1)
+        fi
+        if [[ $? -ne 0 ]]; then
+          printf "%s\n" "❌  ${red}Could not remove${end} ${wt_remove_path}"
+          printf "%s\n" "   ${remove_err}"
+          [[ ${FORCE_DELETE} != true ]] && printf "%s\n" "${yellow}Try using --force flag${end}"
+        fi
+      done
+
+      git worktree prune
+    else
+      printf "%s\n" "${green}Dry run: not removing worktrees${end}"
+    fi
+  fi
+fi
+
 if [[ ${branches_count} -eq 0 ]]; then
     printf "%s\n" "${green}No local branches with missing upstream found${end}"
 else
@@ -107,10 +186,14 @@ else
 
       for branch in "${missing_upstream_branches[@]}"; do
           printf "%s\n" "${green}Deleting branch:${end}     ${branch}"
-          git branch ${delete_flag} "${branch}" -q
+          delete_err=$(git branch ${delete_flag} "${branch}" 2>&1)
           if [[ $? -ne 0 ]]; then
             printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
-            printf "%s\n" "${yellow}Try using --force flag${end}"
+            if [[ "$delete_err" == *"worktree"* ]]; then
+              printf "%s\n" "${yellow}Branch is used by a worktree — try using --worktrees flag${end}"
+            else
+              printf "%s\n" "${yellow}Try using --force flag${end}"
+            fi
           fi
       done
     else
