@@ -188,7 +188,7 @@ else
           delete_err=$(git branch ${delete_flag} "${branch}" 2>&1)
           if [[ $? -ne 0 ]]; then
             printf "%s\n" "❌  ${red}Could not delete${end} ${branch}"
-            if [[ "$delete_err" == *"checked out at"* ]]; then
+            if [[ "$delete_err" == *"worktree"* ]]; then
               printf "%s\n" "${yellow}Branch is used by a worktree — try using --worktrees flag${end}"
             else
               printf "%s\n" "${yellow}Try using --force flag${end}"
